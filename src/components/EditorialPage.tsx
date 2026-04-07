@@ -141,6 +141,7 @@ export function EditorialPage({
             x={margin}
             y={bodyTopLeft}
             onMeasured={obs.handleDropCapMeasured}
+            dropCapStyle={theme.dropCapStyle}
           />
         )}
 
@@ -197,7 +198,7 @@ export function EditorialPage({
         />
 
         <ImageObstacle
-          src={obs.imageSrc}
+          src={theme.imageOverrides?.[page.id] ?? obs.imageSrc}
           x={obs.imagePos.x}
           y={obs.imagePos.y}
           width={obs.imageW}

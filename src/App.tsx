@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Atmosphere } from './components/Atmosphere.tsx'
 import { EditorialPage } from './components/EditorialPage.tsx'
 import { hiringPages } from './content/hiring-pages.ts'
+import { synthesisPages } from './content/synthesis-pages.ts'
 import { parchment } from './themes/parchment.ts'
 import { darkEditorial } from './themes/dark-editorial.ts'
+import { oldEnglish } from './themes/old-english.ts'
 import type { BroadsheetTheme } from './themes/types.ts'
 import type { EditorialPageDefinition, InteractionMode } from './model/page.ts'
 
@@ -19,7 +21,8 @@ function useViewport() {
   return size
 }
 
-const THEMES: readonly BroadsheetTheme[] = [parchment, darkEditorial]
+const THEMES: readonly BroadsheetTheme[] = [parchment, darkEditorial, oldEnglish]
+const ALL_PAGES: readonly EditorialPageDefinition[] = [...hiringPages, ...synthesisPages]
 
 function getEditableBodyText(page: EditorialPageDefinition): string {
   const dropCapChar = page.content.bodyText[0] ?? ''
@@ -54,13 +57,26 @@ function App() {
   const [mode, setMode] = useState<InteractionMode>('read')
   const [draftBodies, setDraftBodies] = useState<Record<string, string>>({})
   const theme = THEMES[themeIndex]!
-  const selectedPage = hiringPages[pageIndex]!
+  const selectedPage = ALL_PAGES[pageIndex]!
   const { width, height } = useViewport()
   const compactToolbar = width < 760
 
+  const rootRef = useRef<HTMLDivElement>(null)
+
   const toggleTheme = useCallback(() => {
+    const el = rootRef.current
+    if (el) {
+      el.classList.add('bs-theme-switching')
+    }
     setThemeIndex((prev) => (prev + 1) % THEMES.length)
   }, [])
+
+  useEffect(() => {
+    const el = rootRef.current
+    if (!el || !el.classList.contains('bs-theme-switching')) return
+    const id = requestAnimationFrame(() => el.classList.remove('bs-theme-switching'))
+    return () => cancelAnimationFrame(id)
+  }, [themeIndex])
 
   const selectPage = useCallback((index: number) => {
     setPageIndex(index)
@@ -79,7 +95,7 @@ function App() {
   const toolbarMessage = getToolbarMessage(mode, selectedPage, compactToolbar)
 
   return (
-    <div style={{ position: 'fixed', inset: 0, backgroundColor: theme.colors.paper, overflow: 'hidden', transition: 'background-color 0.5s ease-out' }}>
+    <div ref={rootRef} className="bs-root-bg" style={{ position: 'fixed', inset: 0, backgroundColor: theme.colors.paper, overflow: 'hidden' }}>
       {theme.atmosphere.enabled && <Atmosphere layers={theme.atmosphere.layers} />}
 
       <EditorialPage
@@ -105,6 +121,13 @@ function App() {
         onSelectPage={selectPage}
         onSetMode={setMode}
         onToggleTheme={toggleTheme}
+      />
+
+      <PageTurnArrows
+        theme={theme}
+        pageIndex={pageIndex}
+        pageCount={ALL_PAGES.length}
+        onSelectPage={selectPage}
       />
 
       <Footer theme={theme} />
@@ -140,6 +163,7 @@ function Toolbar({
   return (
     <div style={{ position: 'fixed', top: '12px', left: '16px', right: '16px', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 30 }}>
       <div
+        className="bs-toolbar"
         style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -149,14 +173,14 @@ function Toolbar({
           maxWidth: 'min(1120px, 100%)',
           padding: compactToolbar ? '10px 12px' : '12px 14px',
           borderRadius: '24px',
-          background: theme.id === 'parchment' ? 'rgba(246, 240, 230, 0.78)' : 'rgba(22, 25, 28, 0.72)',
-          border: `1px solid ${theme.id === 'parchment' ? 'rgba(35, 30, 22, 0.12)' : 'rgba(232, 224, 208, 0.12)'}`,
-          boxShadow: theme.id === 'parchment'
-            ? '0 18px 40px rgba(35, 30, 22, 0.1)'
-            : '0 18px 40px rgba(0, 0, 0, 0.24)',
+          background: theme.id === 'dark-editorial' ? 'rgba(22, 25, 28, 0.72)' : theme.id === 'old-english' ? 'rgba(210, 190, 150, 0.82)' : 'rgba(246, 240, 230, 0.78)',
+          boxShadow: theme.id === 'dark-editorial'
+            ? '0 18px 40px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(232, 224, 208, 0.12)'
+            : theme.id === 'old-english'
+              ? '0 18px 40px rgba(35, 30, 22, 0.1), 0 0 0 1px rgba(60, 40, 15, 0.18)'
+              : '0 18px 40px rgba(35, 30, 22, 0.1), 0 0 0 1px rgba(35, 30, 22, 0.12)',
           backdropFilter: 'blur(14px)',
           pointerEvents: 'auto',
-          transition: 'all 0.5s ease-out',
         }}
       >
         <PageTabs
@@ -174,6 +198,7 @@ function Toolbar({
 
         <button
           type="button"
+          className="bs-btn bs-btn-tab"
           onClick={onToggleTheme}
           style={{
             background: `${theme.colors.ink}12`,
@@ -181,15 +206,16 @@ function Toolbar({
             borderRadius: '16px',
             padding: '6px 14px',
             fontSize: '11px',
-            fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+            fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
             color: theme.colors.muted,
             cursor: 'pointer',
             letterSpacing: '0.5px',
-            textTransform: 'uppercase',
-            transition: 'all 0.3s ease-out',
+            textTransform: 'uppercase' as const,
+            ['--bs-hover-bg' as string]: `${theme.colors.ink}18`,
+            ['--bs-focus-ring' as string]: `${theme.colors.accent}80`,
           }}
         >
-          {theme.id === 'parchment' ? 'dark' : 'light'}
+          {theme.id === 'parchment' ? 'dark' : theme.id === 'dark-editorial' ? 'old english' : 'light'}
         </button>
 
         <StatusBar
@@ -210,51 +236,67 @@ interface PageTabsProps {
 }
 
 function PageTabs({ theme, pageIndex, draftBodies, onSelectPage }: PageTabsProps) {
+  const editorialCount = hiringPages.length
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-      {hiringPages.map((page, index) => {
+    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+      {ALL_PAGES.map((page, index) => {
         const isActive = index === pageIndex
         const pageBodyText = draftBodies[page.id] ?? getEditableBodyText(page)
         const pageIsDirty = pageBodyText !== getEditableBodyText(page)
+        const isSynthesis = index >= editorialCount
         return (
-          <button
-            key={page.id}
-            type="button"
-            aria-pressed={isActive}
-            onClick={() => onSelectPage(index)}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: isActive ? `${theme.colors.accent}2b` : `${theme.colors.ink}12`,
-              border: `1px solid ${isActive ? `${theme.colors.accent}72` : `${theme.colors.ink}22`}`,
-              borderRadius: '16px',
-              padding: '6px 14px',
-              fontSize: '11px',
-              fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-              color: isActive ? theme.colors.ink : theme.colors.muted,
-              cursor: 'pointer',
-              letterSpacing: '0.5px',
-              textTransform: 'uppercase',
-              transition: 'all 0.3s ease-out',
-            }}
-          >
-            <span>{page.name}</span>
-            {pageIsDirty && (
+          <span key={page.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            {index === editorialCount && (
               <span
                 style={{
-                  padding: '2px 6px',
-                  borderRadius: '999px',
-                  background: `${theme.colors.accent}22`,
-                  color: theme.colors.accent,
-                  fontSize: '10px',
-                  letterSpacing: '0.4px',
+                  width: '1px',
+                  alignSelf: 'stretch',
+                  minHeight: '18px',
+                  background: `${theme.colors.ink}18`,
+                  margin: '0 2px',
                 }}
-              >
-                draft
-              </span>
+              />
             )}
-          </button>
+            <button
+              type="button"
+              className="bs-btn bs-btn-tab"
+              aria-pressed={isActive}
+              onClick={() => onSelectPage(index)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: isActive ? `${theme.colors.accent}2b` : `${theme.colors.ink}${isSynthesis ? '0a' : '12'}`,
+                border: `1px solid ${isActive ? `${theme.colors.accent}72` : `${theme.colors.ink}${isSynthesis ? '18' : '22'}`}`,
+                borderRadius: '16px',
+                padding: '5px 11px',
+                fontSize: '10px',
+                fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+                color: isActive ? theme.colors.ink : theme.colors.muted,
+                cursor: 'pointer',
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase' as const,
+                ['--bs-hover-bg' as string]: isActive ? `${theme.colors.accent}35` : `${theme.colors.ink}18`,
+                ['--bs-focus-ring' as string]: `${theme.colors.accent}80`,
+              }}
+            >
+              <span>{page.name}</span>
+              {pageIsDirty && (
+                <span
+                  style={{
+                    padding: '2px 6px',
+                    borderRadius: '999px',
+                    background: `${theme.colors.accent}22`,
+                    color: theme.colors.accent,
+                    fontSize: '9px',
+                    letterSpacing: '0.4px',
+                  }}
+                >
+                  draft
+                </span>
+              )}
+            </button>
+          </span>
         )
       })}
     </div>
@@ -276,6 +318,7 @@ function ModeButtons({ theme, mode, onSetMode }: ModeButtonsProps) {
           <button
             key={nextMode}
             type="button"
+            className="bs-btn bs-btn-tab"
             aria-pressed={isActive}
             onClick={() => onSetMode(nextMode)}
             style={{
@@ -284,12 +327,13 @@ function ModeButtons({ theme, mode, onSetMode }: ModeButtonsProps) {
               borderRadius: '16px',
               padding: '6px 12px',
               fontSize: '11px',
-              fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+              fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
               color: isActive ? theme.colors.accent : theme.colors.muted,
               cursor: 'pointer',
               letterSpacing: '0.5px',
-              textTransform: 'uppercase',
-              transition: 'all 0.3s ease-out',
+              textTransform: 'uppercase' as const,
+              ['--bs-hover-bg' as string]: isActive ? `${theme.colors.accent}3a` : `${theme.colors.ink}12`,
+              ['--bs-focus-ring' as string]: `${theme.colors.accent}80`,
             }}
           >
             {nextMode}
@@ -319,12 +363,13 @@ function StatusBar({ theme, toolbarMessage, isPageDirty }: StatusBarProps) {
       }}
     >
       <span
+        className="bs-status-text"
         style={{
           fontSize: '12px',
-          fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
           color: theme.colors.muted,
           letterSpacing: '0.2px',
-          textAlign: 'center',
+          textAlign: 'center' as const,
         }}
       >
         {toolbarMessage}
@@ -337,9 +382,9 @@ function StatusBar({ theme, toolbarMessage, isPageDirty }: StatusBarProps) {
             background: `${theme.colors.accent}20`,
             color: theme.colors.accent,
             fontSize: '10px',
-            fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+            fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
             letterSpacing: '0.4px',
-            textTransform: 'uppercase',
+            textTransform: 'uppercase' as const,
           }}
         >
           draft kept while switching
@@ -368,18 +413,87 @@ function Footer({ theme }: FooterProps) {
       }}
     >
       <span
+        className="bs-footer"
         style={{
           fontSize: '10px',
-          fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+          fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
           color: `${theme.colors.muted}80`,
           letterSpacing: '0.8px',
-          textTransform: 'uppercase',
-          transition: 'color 0.5s ease-out',
+          textTransform: 'uppercase' as const,
         }}
       >
         Built with Broadsheet
       </span>
     </div>
+  )
+}
+
+interface PageTurnArrowsProps {
+  readonly theme: BroadsheetTheme
+  readonly pageIndex: number
+  readonly pageCount: number
+  readonly onSelectPage: (index: number) => void
+}
+
+function PageTurnArrows({ theme, pageIndex, pageCount, onSelectPage }: PageTurnArrowsProps) {
+  const hasPrev = pageIndex > 0
+  const hasNext = pageIndex < pageCount - 1
+  const prevPage = hasPrev ? ALL_PAGES[pageIndex - 1] : null
+  const nextPage = hasNext ? ALL_PAGES[pageIndex + 1] : null
+
+  const arrowStyle = (enabled: boolean): React.CSSProperties => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: 'transparent',
+    border: 'none',
+    cursor: enabled ? 'pointer' : 'default',
+    opacity: enabled ? 0.6 : 0.15,
+    color: theme.colors.muted,
+    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+    fontSize: '11px',
+    letterSpacing: '0.3px',
+    padding: '12px 16px',
+    pointerEvents: enabled ? 'auto' : 'none',
+  })
+
+  return (
+    <>
+      <button
+        type="button"
+        className="bs-btn bs-btn-sm bs-btn-arrow"
+        onClick={() => hasPrev && onSelectPage(pageIndex - 1)}
+        style={{
+          ...arrowStyle(hasPrev),
+          position: 'fixed',
+          left: '8px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          zIndex: 25,
+        }}
+        aria-label={prevPage ? `Previous: ${prevPage.name}` : 'No previous page'}
+        title={prevPage ? `Previous: ${prevPage.name}` : undefined}
+      >
+        <span style={{ fontSize: '20px', lineHeight: 1 }}>&lsaquo;</span>
+      </button>
+      <button
+        type="button"
+        className="bs-btn bs-btn-sm bs-btn-arrow"
+        onClick={() => hasNext && onSelectPage(pageIndex + 1)}
+        style={{
+          ...arrowStyle(hasNext),
+          position: 'fixed',
+          right: '8px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          zIndex: 25,
+        }}
+        aria-label={nextPage ? `Next: ${nextPage.name}` : 'No next page'}
+        title={nextPage ? `Next: ${nextPage.name}` : undefined}
+      >
+        <span style={{ fontSize: '20px', lineHeight: 1 }}>&rsaquo;</span>
+      </button>
+    </>
   )
 }
 

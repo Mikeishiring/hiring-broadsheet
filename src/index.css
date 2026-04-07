@@ -15,3 +15,85 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
+
+/* ── Broadsheet Chrome ─────────────────────────────── */
+
+.bs-toolbar {
+  transition:
+    background 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bs-btn {
+  transition:
+    background 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.1s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) {
+  .bs-btn:hover {
+    filter: brightness(1.15);
+  }
+  .bs-btn-tab:hover {
+    filter: brightness(1.1);
+    background: var(--bs-hover-bg, rgba(128, 128, 128, 0.12)) !important;
+  }
+  .bs-btn-arrow:hover {
+    opacity: 0.85 !important;
+  }
+}
+
+.bs-btn:active {
+  transform: scale(0.92);
+  transition-duration: 0.08s;
+}
+
+.bs-btn-sm:active {
+  transform: scale(0.95);
+  transition-duration: 0.08s;
+}
+
+.bs-btn-arrow:active {
+  transform: translateY(-50%) scale(0.9);
+  transition-duration: 0.08s;
+}
+
+.bs-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bs-focus-ring, rgba(201, 168, 76, 0.5));
+}
+
+.bs-root-bg {
+  transition: background-color 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bs-root-bg.bs-theme-switching,
+.bs-theme-switching *,
+.bs-theme-switching *::before,
+.bs-theme-switching *::after {
+  transition: none !important;
+}
+
+.bs-footer {
+  transition: color 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bs-status-text {
+  transition: color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Reduced Motion ────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

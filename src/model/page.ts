@@ -48,11 +48,18 @@ export interface EditorialPageLayout {
   readonly image: ImageObstacleLayout
 }
 
+export interface PageSourceRef {
+  readonly label: string
+  readonly videoUrl?: string
+  readonly relatedPageId?: string
+}
+
 export interface EditorialPageContent {
   readonly headline: string
   readonly credit: string
   readonly bodyText: string
   readonly pullQuote: string
+  readonly sources?: readonly PageSourceRef[]
 }
 
 export interface EditorialPageDefinition {

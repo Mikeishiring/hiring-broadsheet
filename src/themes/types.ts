@@ -31,6 +31,16 @@ export interface ThemeLayout {
   readonly topOffset: number
 }
 
+export interface ThemeDropCapStyle {
+  // When true, the drop cap renders inside an ornamental border box
+  // (illuminated initial style, like 16th-century printed books)
+  readonly ornamental: boolean
+  // Background color behind the drop cap letter
+  readonly background?: string
+  // Border color for the ornamental box
+  readonly borderColor?: string
+}
+
 export interface BroadsheetTheme {
   readonly id: string
   readonly name: string
@@ -38,4 +48,7 @@ export interface BroadsheetTheme {
   readonly typography: ThemeTypography
   readonly atmosphere: ThemeAtmosphere
   readonly layout: ThemeLayout
+  readonly dropCapStyle?: ThemeDropCapStyle
+  // Map of page ID → SVG data URL to replace the default obstacle image
+  readonly imageOverrides?: Readonly<Record<string, string>>
 }
